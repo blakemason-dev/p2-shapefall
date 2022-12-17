@@ -1,4 +1,4 @@
-# p2-shapefall from mac
+# p2-shapefall
 
 ## About
 Use the front-end to drop custom shapes into the p2.js physics scene.

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import Phaser from 'phaser';
+import { PlayGame } from "../game/scenes/main";
 
 const Game = () => {
     const initUseEffectCalled = useRef(false);
@@ -12,7 +13,8 @@ const Game = () => {
             type: Phaser.AUTO,
             width: 640,
             height: 360,
-            parent: 'game'
+            parent: 'game',
+            scene: PlayGame
         }
     
         const game = new Phaser.Game(config);

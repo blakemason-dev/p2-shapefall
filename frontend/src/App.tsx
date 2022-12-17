@@ -7,7 +7,7 @@ function App() {
 
     return (
         <div className="App">
-            <h2>p2-shapefall v2</h2>
+            <h2>p2-shapefall</h2>
             <Game />
         </div>
     )
