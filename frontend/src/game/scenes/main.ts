@@ -8,20 +8,22 @@ const MAX_SUB_STEPS = 10;
 const P2_GAME_HEIGHT = 10;
 const P2_GAME_WIDTH = P2_GAME_HEIGHT * 16 / 9;
 
-export class PlayGame extends Phaser.Scene {
-    // shapes
-    private shapes: any[] = [];
+let theta = 0;
 
+export class PlayGame extends Phaser.Scene {
     // keys
     private WKey?: Phaser.Input.Keyboard.Key;
     private AKey?: Phaser.Input.Keyboard.Key;
     private SKey?: Phaser.Input.Keyboard.Key;
     private DKey?: Phaser.Input.Keyboard.Key;
-
+    
     // physics
     private world?: p2.World;
-    private body?: p2.Body;
-    private shape?: p2.Shape;
+    // private body?: p2.Body;
+    // private shape?: p2.Shape;
+    private p2Bodies: any[] = [];
+    private p2Shapes: any[] = [];
+    private phaserShapes: any[] = [];
 
     private playerBody?: p2.Body;
     private playerShape?: p2.Shape;
@@ -46,6 +48,32 @@ export class PlayGame extends Phaser.Scene {
         this.load.image('pacman', '/src/game/assets/pacman.png');
     }
 
+    createFallingObject() {
+        const shape = new p2.Circle({
+            radius: 0.5
+        });
+
+        const body = new p2.Body({
+            mass: 5,
+            position: [P2_GAME_WIDTH/2, P2_GAME_HEIGHT*1.1],
+
+        });
+
+        body.addShape(shape);
+        this.world?.addBody(body);
+
+        this.p2Shapes.push(shape);
+        this.p2Bodies.push(body);
+
+        const circleShape = this.add.circle(
+            ConvertP2.xToPhaser(body.position[0], P2_GAME_WIDTH, this.scale), 
+            ConvertP2.yToPhaser(body.position[1], P2_GAME_HEIGHT*1.1, this.scale), 
+            ConvertP2.dimToPhaser(0.5, P2_GAME_WIDTH, this.scale)
+        );
+        circleShape.setStrokeStyle(3, 0xefc53f);
+        this.phaserShapes.push(circleShape);
+    }
+
     create() {
         console.log('PlayGame: create()');
 
@@ -54,26 +82,7 @@ export class PlayGame extends Phaser.Scene {
             gravity: [0, -9.81]
         });
 
-        this.shape = new p2.Circle({
-            radius: 0.5
-        });
-
-        this.body = new p2.Body({
-            mass: 5,
-            position: [P2_GAME_WIDTH/2, P2_GAME_HEIGHT/2],
-
-        });
-
-        this.body.addShape(this.shape);
-        this.world.addBody(this.body);
-
-        // create a circle shape
-        const circleX = ConvertP2.xToPhaser(this.body.position[0], P2_GAME_WIDTH, this.scale);
-        const circleY = ConvertP2.yToPhaser(this.body.position[1], P2_GAME_HEIGHT, this.scale);
-        const circleRadius = ConvertP2.dimToPhaser(0.5, P2_GAME_WIDTH, this.scale);
-        const circleShape = this.add.circle(circleX, circleY, circleRadius);
-        circleShape.setStrokeStyle(3, 0xefc53f);
-        this.shapes.push(circleShape);
+        this.createFallingObject();
 
         // create a floor
         var floorBody = new p2.Body({
@@ -89,6 +98,7 @@ export class PlayGame extends Phaser.Scene {
             position: [5, 5]
         });
         this.playerBody.type = p2.Body.KINEMATIC;
+        // this.playerBody.collisionResponse = false;
         this.playerShape = new p2.Circle({
             radius: 0.5
         });
@@ -114,43 +124,80 @@ export class PlayGame extends Phaser.Scene {
 
         this.world.on('beginContact', () => {
             console.log('contact');
-        })
+        });
+
+        // add event listener
+        // const deployShapeFinsihedEventListener = () => {
+        //     window.removeEventListener("deploy-shape", deployShapeFinsihedEventListener);
+        // };
+        window.addEventListener("deploy-shape", () => {
+            console.log('called deploy-shape');
+            this.createFallingObject();
+        });
     }
 
     update(t: number, dt: number) {
         if (!this.playerBody || !this.playerSprite) return;
 
-        this.playerBody.velocity = [0,0];
+        let v_x = 0;
+        let v_y = 0;
         // get input
         if (this.WKey?.isDown) {
-            this.playerBody.velocity[1] = 5;
+            v_y = 5;
         }
         if (this.AKey?.isDown) {
-            this.playerBody.velocity[0] = -5;
+            v_x = -5;
         }
         if (this.SKey?.isDown) {
-            this.playerBody.velocity[1] = -5;
+            v_y = -5;
         }
         if (this.DKey?.isDown) {
-            this.playerBody.velocity[0] = 5;
+            v_x = 5;
+        }
+
+        const vel_norm = p2.vec2.normalize([0,0], [v_x, v_y]);
+        const SPEED = 5;
+        this.playerBody.velocity[0] = vel_norm[0] * SPEED;
+        this.playerBody.velocity[1] = vel_norm[1] * SPEED;
+        
+        if (p2.vec2.length(vel_norm) > 0.01) {
+            theta = Math.atan2(vel_norm[1], vel_norm[0]);
+            this.playerBody.angle = theta;
         }
 
         // handle game logic
-        if (this.debugText) this.debugText.text = "dt: " + dt.toFixed(3) + "ms\nFPS: " + (1000/dt).toFixed(2);
+        if (this.debugText) this.debugText.text = 
+            "dt: " + dt.toFixed(3) + 
+            "ms\nFPS: " + (1000/dt).toFixed(2) + 
+            "\nPacman Angle: " + theta.toFixed(2);
+        ;
 
         // step the physics world
         this.world?.step(FIXED_TIME_STEP, dt/1000, MAX_SUB_STEPS);
-        this.shapes.map(shp => {
-            const x = this.body?.interpolatedPosition[0];
-            const y = this.body?.interpolatedPosition[1];
+        for (let i = 0; i < this.p2Bodies.length; i++) {
+            const p2Body = this.p2Bodies[i];
+            const p2Shape = this.p2Shapes[i];
+            const phaserShape = this.phaserShapes[i];
+
+            const x = p2Body?.interpolatedPosition[0];
+            const y = p2Body?.interpolatedPosition[1];
             if (x && y) {
-                shp.x = ConvertP2.xToPhaser(x, P2_GAME_WIDTH, this.scale);
-                shp.y = ConvertP2.yToPhaser(y, P2_GAME_HEIGHT, this.scale);
+                phaserShape.x = ConvertP2.xToPhaser(x, P2_GAME_WIDTH, this.scale);
+                phaserShape.y = ConvertP2.yToPhaser(y, P2_GAME_HEIGHT, this.scale);
             }
-        });
+        }
+        // this.shapes.map(shp => {
+        //     const x = this.body?.interpolatedPosition[0];
+        //     const y = this.body?.interpolatedPosition[1];
+        //     if (x && y) {
+        //         shp.x = ConvertP2.xToPhaser(x, P2_GAME_WIDTH, this.scale);
+        //         shp.y = ConvertP2.yToPhaser(y, P2_GAME_HEIGHT, this.scale);
+        //     }
+        // });
 
         // update player sprite
         this.playerSprite.x = ConvertP2.xToPhaser(this.playerBody.interpolatedPosition[0], P2_GAME_WIDTH, this.scale);
         this.playerSprite.y = ConvertP2.yToPhaser(this.playerBody.interpolatedPosition[1], P2_GAME_HEIGHT, this.scale);
+        this.playerSprite.angle = ConvertP2.radToPhaserAngle(theta);
     }
 }

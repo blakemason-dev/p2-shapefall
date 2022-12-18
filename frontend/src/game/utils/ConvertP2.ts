@@ -18,4 +18,8 @@ const dimToPhaser = (p2_dim: number, p2_width: number, phaser_scale: Phaser.Scal
     return p2_dim * width / p2_width;
 }
 
-export { xToPhaser, yToPhaser, dimToPhaser };
+const radToPhaserAngle = (p2_rad: number) => {
+    return Phaser.Math.RadToDeg(-p2_rad);
+}
+
+export { xToPhaser, yToPhaser, dimToPhaser, radToPhaserAngle };
