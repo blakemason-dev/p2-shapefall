@@ -23,7 +23,14 @@ export class PlayGame extends Phaser.Scene {
     private body?: p2.Body;
     private shape?: p2.Shape;
 
-    private text?: Phaser.GameObjects.Text;
+    private playerBody?: p2.Body;
+    private playerShape?: p2.Shape;
+    private playerSprite?: Phaser.GameObjects.Sprite;
+
+    private itemBody?: p2.Body;
+    private itemShape?: p2.Shape;
+
+    private debugText?: Phaser.GameObjects.Text;
 
     constructor() {
         super("PlayGame");
@@ -35,6 +42,8 @@ export class PlayGame extends Phaser.Scene {
 
     preload() {
         console.log('PlayGame: preload()');
+
+        this.load.image('pacman', '/src/game/assets/pacman.png');
     }
 
     create() {
@@ -74,40 +83,60 @@ export class PlayGame extends Phaser.Scene {
         floorBody.addShape(floorShape);
         this.world.addBody(floorBody);
 
+        // create a kinematic player
+        this.playerBody = new p2.Body({
+            mass: 2,
+            position: [5, 5]
+        });
+        this.playerBody.type = p2.Body.KINEMATIC;
+        this.playerShape = new p2.Circle({
+            radius: 0.5
+        });
+        this.playerBody.addShape(this.playerShape);
+
+        this.playerSprite = this.add.sprite(
+            ConvertP2.xToPhaser(this.playerBody.position[0], P2_GAME_WIDTH, this.scale),
+            ConvertP2.yToPhaser(this.playerBody.position[1], P2_GAME_HEIGHT, this.scale),
+            "pacman"
+        );
+        this.playerSprite.displayWidth = ConvertP2.dimToPhaser(1, P2_GAME_WIDTH, this.scale);
+        this.playerSprite.displayHeight = ConvertP2.dimToPhaser(1, P2_GAME_WIDTH, this.scale);
+
+        this.world.addBody(this.playerBody);
+
         // create input keys
         this.WKey = this.input.keyboard.addKey('W');
         this.AKey = this.input.keyboard.addKey('A');
         this.SKey = this.input.keyboard.addKey('S');
         this.DKey = this.input.keyboard.addKey('D');
 
-        this.text = this.add.text(10, 10, "dt: ");
+        this.debugText = this.add.text(10, 10, "dt: ");
+
+        this.world.on('beginContact', () => {
+            console.log('contact');
+        })
     }
 
     update(t: number, dt: number) {
+        if (!this.playerBody || !this.playerSprite) return;
+
+        this.playerBody.velocity = [0,0];
         // get input
         if (this.WKey?.isDown) {
-            this.shapes.map(shp => {
-                shp.y -= 5;
-            });
+            this.playerBody.velocity[1] = 5;
         }
         if (this.AKey?.isDown) {
-            this.shapes.map(shp => {
-                shp.x -= 5;
-            });
+            this.playerBody.velocity[0] = -5;
         }
         if (this.SKey?.isDown) {
-            this.shapes.map(shp => {
-                shp.y += 5;
-            });
+            this.playerBody.velocity[1] = -5;
         }
         if (this.DKey?.isDown) {
-            this.shapes.map(shp => {
-                shp.x += 5;
-            });
+            this.playerBody.velocity[0] = 5;
         }
 
         // handle game logic
-        if (this.text) this.text.text = "dt: " + dt.toFixed(3) + "ms";
+        if (this.debugText) this.debugText.text = "dt: " + dt.toFixed(3) + "ms\nFPS: " + (1000/dt).toFixed(2);
 
         // step the physics world
         this.world?.step(FIXED_TIME_STEP, dt/1000, MAX_SUB_STEPS);
@@ -118,6 +147,10 @@ export class PlayGame extends Phaser.Scene {
                 shp.x = ConvertP2.xToPhaser(x, P2_GAME_WIDTH, this.scale);
                 shp.y = ConvertP2.yToPhaser(y, P2_GAME_HEIGHT, this.scale);
             }
-        })
+        });
+
+        // update player sprite
+        this.playerSprite.x = ConvertP2.xToPhaser(this.playerBody.interpolatedPosition[0], P2_GAME_WIDTH, this.scale);
+        this.playerSprite.y = ConvertP2.yToPhaser(this.playerBody.interpolatedPosition[1], P2_GAME_HEIGHT, this.scale);
     }
 }
