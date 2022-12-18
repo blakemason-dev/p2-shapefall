@@ -19,8 +19,7 @@ export class PlayGame extends Phaser.Scene {
     
     // physics
     private world?: p2.World;
-    // private body?: p2.Body;
-    // private shape?: p2.Shape;
+
     private p2Bodies: any[] = [];
     private p2Shapes: any[] = [];
     private phaserShapes: any[] = [];
@@ -34,6 +33,8 @@ export class PlayGame extends Phaser.Scene {
 
     private debugText?: Phaser.GameObjects.Text;
 
+    private popSound?: Phaser.Sound.HTML5AudioSound;
+
     constructor() {
         super("PlayGame");
     }
@@ -46,6 +47,9 @@ export class PlayGame extends Phaser.Scene {
         console.log('PlayGame: preload()');
 
         this.load.image('pacman', '/src/game/assets/pacman.png');
+        this.load.audio('pop', '/src/game/assets/audio/pop.wav', {
+            instances: 5
+        });
     }
 
     createFallingObject() {
@@ -122,16 +126,18 @@ export class PlayGame extends Phaser.Scene {
 
         this.debugText = this.add.text(10, 10, "dt: ");
 
-        this.world.on('beginContact', () => {
+        // add sounds
+        this.popSound = this.sound.add('pop') as Phaser.Sound.HTML5AudioSound;
+
+        this.world.on('beginContact', (data: any) => {
             console.log('contact');
+            if (data.bodyA === this.playerBody || data.bodyB === this.playerBody) {
+                this.popSound?.play();
+            }
         });
 
         // add event listener
-        // const deployShapeFinsihedEventListener = () => {
-        //     window.removeEventListener("deploy-shape", deployShapeFinsihedEventListener);
-        // };
         window.addEventListener("deploy-shape", () => {
-            console.log('called deploy-shape');
             this.createFallingObject();
         });
     }
@@ -141,7 +147,8 @@ export class PlayGame extends Phaser.Scene {
 
         let v_x = 0;
         let v_y = 0;
-        // get input
+
+        // 1) get input
         if (this.WKey?.isDown) {
             v_y = 5;
         }
@@ -165,18 +172,19 @@ export class PlayGame extends Phaser.Scene {
             this.playerBody.angle = theta;
         }
 
-        // handle game logic
+        // 2) handle game logic
         if (this.debugText) this.debugText.text = 
             "dt: " + dt.toFixed(3) + 
             "ms\nFPS: " + (1000/dt).toFixed(2) + 
             "\nPacman Angle: " + theta.toFixed(2);
         ;
 
-        // step the physics world
+        // 3) step the physics world
         this.world?.step(FIXED_TIME_STEP, dt/1000, MAX_SUB_STEPS);
+
+        // 4) render updates
         for (let i = 0; i < this.p2Bodies.length; i++) {
             const p2Body = this.p2Bodies[i];
-            const p2Shape = this.p2Shapes[i];
             const phaserShape = this.phaserShapes[i];
 
             const x = p2Body?.interpolatedPosition[0];
@@ -186,14 +194,6 @@ export class PlayGame extends Phaser.Scene {
                 phaserShape.y = ConvertP2.yToPhaser(y, P2_GAME_HEIGHT, this.scale);
             }
         }
-        // this.shapes.map(shp => {
-        //     const x = this.body?.interpolatedPosition[0];
-        //     const y = this.body?.interpolatedPosition[1];
-        //     if (x && y) {
-        //         shp.x = ConvertP2.xToPhaser(x, P2_GAME_WIDTH, this.scale);
-        //         shp.y = ConvertP2.yToPhaser(y, P2_GAME_HEIGHT, this.scale);
-        //     }
-        // });
 
         // update player sprite
         this.playerSprite.x = ConvertP2.xToPhaser(this.playerBody.interpolatedPosition[0], P2_GAME_WIDTH, this.scale);
