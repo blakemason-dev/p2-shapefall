@@ -19,6 +19,10 @@ const dimToPhaser = (p2_dim: number, p2_width: number, phaser_scale: Phaser.Scal
 }
 
 const radToPhaserAngle = (p2_rad: number) => {
+    p2_rad = p2_rad % (2*Math.PI);
+    if (p2_rad < 0) {
+        p2_rad += (2*Math.PI);
+    }
     return Phaser.Math.RadToDeg(-p2_rad);
 }
 

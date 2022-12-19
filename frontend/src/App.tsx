@@ -7,7 +7,7 @@ function App() {
 
     return (
         <div className="App">
-            <h2>p2-shapefall</h2>
+            <h1 style={{fontFamily: "mono"}}>p2-shapefall</h1>
             <Game />
             <p>Controls: W, A, S, D to control pacman</p>
         </div>

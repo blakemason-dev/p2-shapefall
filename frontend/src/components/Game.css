@@ -7,6 +7,48 @@
     margin: 0.5rem 0.1rem;
 }
 
-.game__config > input {
-    margin-right: 0.5rem;
+.game__config {
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: center;
+    justify-content: space-evenly;
+    width: 240px;
 }
+
+.game__config > * {
+    margin-bottom: 1rem;
+    margin-right: 0.5rem;
+    width: 100%;
+}
+
+.game__config-shapepick {
+    box-shadow: 3px 3px 10px rgb(202, 202, 202);
+    border: solid 1px rgb(210, 210, 210);
+    border-radius: 10px;
+    padding: 0.5rem;
+}
+
+.game__config-shapepick > input {
+    margin: 0.5rem 0rem;
+    margin-right: 0.3rem;
+}
+
+.game__config-shapepick > input:hover {
+    cursor: pointer;
+}
+
+.game__config-deploy {
+    padding: 0.5rem 1.5rem;
+    border-radius: 10px;
+    border: none;
+    box-shadow: 3px 3px 3px #aaa;
+    font-size: 20px;
+    color: white;
+    text-transform: capitalize;
+}
+
+.game__config-deploy:hover {
+    cursor: pointer;
+    color: rgb(206, 241, 255);
+}
+

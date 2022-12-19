@@ -52,30 +52,66 @@ export class PlayGame extends Phaser.Scene {
         });
     }
 
-    createFallingObject() {
-        const shape = new p2.Circle({
-            radius: 0.5
-        });
+    createFallingObject(shape: string, color: string) {
+        let p2Shape;
 
-        const body = new p2.Body({
+        const p2Body = new p2.Body({
             mass: 5,
             position: [P2_GAME_WIDTH/2, P2_GAME_HEIGHT*1.1],
-
+            allowSleep: true
         });
+        // p2Body.damping = 0.3;
+        // p2Body.angularDamping = 0.3;
 
-        body.addShape(shape);
-        this.world?.addBody(body);
+        let phaserShape;
 
-        this.p2Shapes.push(shape);
-        this.p2Bodies.push(body);
+        switch (shape) {
+            case "circle": {
+                phaserShape = this.add.circle(
+                    ConvertP2.xToPhaser(p2Body.position[0], P2_GAME_WIDTH, this.scale), 
+                    ConvertP2.yToPhaser(p2Body.position[1], P2_GAME_HEIGHT*1.1, this.scale), 
+                    ConvertP2.dimToPhaser(0.5, P2_GAME_WIDTH, this.scale)
+                );
 
-        const circleShape = this.add.circle(
-            ConvertP2.xToPhaser(body.position[0], P2_GAME_WIDTH, this.scale), 
-            ConvertP2.yToPhaser(body.position[1], P2_GAME_HEIGHT*1.1, this.scale), 
-            ConvertP2.dimToPhaser(0.5, P2_GAME_WIDTH, this.scale)
-        );
-        circleShape.setStrokeStyle(3, 0xefc53f);
-        this.phaserShapes.push(circleShape);
+                p2Shape = new p2.Circle({
+                    radius: 0.5
+                });
+                break;
+            }
+            case "square": {
+                phaserShape = this.add.rectangle(
+                    ConvertP2.xToPhaser(p2Body.position[0], P2_GAME_WIDTH, this.scale), 
+                    ConvertP2.yToPhaser(p2Body.position[1], P2_GAME_HEIGHT*1.1, this.scale), 
+                    ConvertP2.dimToPhaser(1, P2_GAME_WIDTH, this.scale),
+                    ConvertP2.dimToPhaser(1, P2_GAME_WIDTH, this.scale)
+                )
+
+                p2Shape = new p2.Box({
+                    width: 1,
+                    height: 1
+                });
+                break;
+            }
+            case "triangle": {
+
+                break;
+            }
+            default: 
+                break;
+        }
+
+        if (phaserShape && p2Shape) {
+            phaserShape.setStrokeStyle(3, parseInt(color.slice(1,7), 16));
+            this.phaserShapes.push(phaserShape);
+
+            p2Body.addShape(p2Shape);
+            this.world?.addBody(p2Body);
+    
+            this.p2Shapes.push(p2Shape);
+            this.p2Bodies.push(p2Body);
+        }
+
+
     }
 
     create() {
@@ -85,8 +121,18 @@ export class PlayGame extends Phaser.Scene {
         this.world = new p2.World({
             gravity: [0, -9.81]
         });
+        this.world.sleepMode = p2.World.BODY_SLEEPING;
+        // this.world.defaultContactMaterial = new p2.ContactMaterial(
+        //     new p2.Material(0),
+        //     new p2.Material(1),
+        //     {
+        //         friction: 0.3,
+        //         restitution: 0.1,
+        //         stiffness: 1e6
+        //     }
+        // )
 
-        this.createFallingObject();
+        this.createFallingObject("circle", "#B80000");
 
         // create a floor
         var floorBody = new p2.Body({
@@ -99,7 +145,8 @@ export class PlayGame extends Phaser.Scene {
         // create a kinematic player
         this.playerBody = new p2.Body({
             mass: 2,
-            position: [5, 5]
+            position: [5, 5],
+            allowSleep: true
         });
         this.playerBody.type = p2.Body.KINEMATIC;
         // this.playerBody.collisionResponse = false;
@@ -137,8 +184,8 @@ export class PlayGame extends Phaser.Scene {
         });
 
         // add event listener
-        window.addEventListener("deploy-shape", () => {
-            this.createFallingObject();
+        window.addEventListener("deploy-shape", (data: any) => {
+            this.createFallingObject(data.detail.shape, data.detail.color);
         });
     }
 
@@ -189,9 +236,11 @@ export class PlayGame extends Phaser.Scene {
 
             const x = p2Body?.interpolatedPosition[0];
             const y = p2Body?.interpolatedPosition[1];
+            const rot = p2Body?.interpolatedAngle;
             if (x && y) {
                 phaserShape.x = ConvertP2.xToPhaser(x, P2_GAME_WIDTH, this.scale);
                 phaserShape.y = ConvertP2.yToPhaser(y, P2_GAME_HEIGHT, this.scale);
+                phaserShape.angle = ConvertP2.radToPhaserAngle(rot);
             }
         }
 
