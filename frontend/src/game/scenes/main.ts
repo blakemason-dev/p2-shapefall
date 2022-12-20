@@ -58,10 +58,12 @@ export class PlayGame extends Phaser.Scene {
         const p2Body = new p2.Body({
             mass: 5,
             position: [P2_GAME_WIDTH/2, P2_GAME_HEIGHT*1.1],
-            allowSleep: true
         });
-        // p2Body.damping = 0.3;
-        // p2Body.angularDamping = 0.3;
+        p2Body.allowSleep = true;
+        p2Body.sleepSpeedLimit = 1; // Body will feel sleepy if speed<1 (speed is the norm of velocity)
+        p2Body.sleepTimeLimit =  1; // Body falls asleep after 1s of sleepiness
+        p2Body.damping = 0.5;
+        p2Body.angularDamping = 0.5;
 
         let phaserShape;
 
@@ -93,7 +95,23 @@ export class PlayGame extends Phaser.Scene {
                 break;
             }
             case "triangle": {
-
+                phaserShape = this.add.polygon(
+                    ConvertP2.xToPhaser(p2Body.position[0], P2_GAME_WIDTH, this.scale), 
+                    ConvertP2.yToPhaser(p2Body.position[1], P2_GAME_HEIGHT*1.1, this.scale), 
+                    [
+                        ConvertP2.dimToPhaser(1, P2_GAME_WIDTH, this.scale), ConvertP2.dimToPhaser(1, P2_GAME_WIDTH, this.scale),
+                        ConvertP2.dimToPhaser(0.5, P2_GAME_WIDTH, this.scale), ConvertP2.dimToPhaser(0, P2_GAME_WIDTH, this.scale),
+                        ConvertP2.dimToPhaser(0, P2_GAME_WIDTH, this.scale), ConvertP2.dimToPhaser(1, P2_GAME_WIDTH, this.scale),
+                    ]
+                )
+                
+                p2Shape = new p2.Convex({
+                    vertices: [
+                        [0.5, -0.5], 
+                        [0, 0.5],
+                        [-0.5, -0.5], 
+                    ]
+                })
                 break;
             }
             default: 
@@ -121,16 +139,11 @@ export class PlayGame extends Phaser.Scene {
         this.world = new p2.World({
             gravity: [0, -9.81]
         });
+        this.world.applyDamping = true;
         this.world.sleepMode = p2.World.BODY_SLEEPING;
-        // this.world.defaultContactMaterial = new p2.ContactMaterial(
-        //     new p2.Material(0),
-        //     new p2.Material(1),
-        //     {
-        //         friction: 0.3,
-        //         restitution: 0.1,
-        //         stiffness: 1e6
-        //     }
-        // )
+        this.world.defaultContactMaterial.friction = 0.3;
+        this.world.defaultContactMaterial.restitution = 0.3;
+        this.world.defaultContactMaterial.stiffness = 1e7;
 
         this.createFallingObject("circle", "#B80000");
 
@@ -146,7 +159,6 @@ export class PlayGame extends Phaser.Scene {
         this.playerBody = new p2.Body({
             mass: 2,
             position: [5, 5],
-            allowSleep: true
         });
         this.playerBody.type = p2.Body.KINEMATIC;
         // this.playerBody.collisionResponse = false;

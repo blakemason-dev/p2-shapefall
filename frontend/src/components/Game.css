@@ -22,7 +22,7 @@
 }
 
 .game__config-shapepick {
-    box-shadow: 3px 3px 10px rgb(202, 202, 202);
+    /* box-shadow: 3px 3px 10px rgb(202, 202, 202); */
     border: solid 1px rgb(210, 210, 210);
     border-radius: 10px;
     padding: 0.5rem;
@@ -41,7 +41,7 @@
     padding: 0.5rem 1.5rem;
     border-radius: 10px;
     border: none;
-    box-shadow: 3px 3px 3px #aaa;
+    /* box-shadow: 3px 3px 3px #aaa; */
     font-size: 20px;
     color: white;
     text-transform: capitalize;
@@ -49,6 +49,15 @@
 
 .game__config-deploy:hover {
     cursor: pointer;
-    color: rgb(206, 241, 255);
+    color: rgb(166, 228, 253);
 }
 
+.game__viewer {
+    border: solid 1px white;
+    padding: 0;
+    margin: 0;
+    width: 642px;
+    height: 362px;
+    margin-bottom: 1rem;
+    border-radius: 3px;
+}
